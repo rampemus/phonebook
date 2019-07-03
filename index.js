@@ -2,20 +2,38 @@ const express = require('express')
 const app = express()
 const bodyParser = require('body-parser')
 const data = require('./db.json')
+const morgan = require('morgan')
+
+const maxPersons = 100
+const newRandomId = () => Math.floor((Math.random() * maxPersons) + 1)
 
 app.use(bodyParser.json())
 
-app.get('/api/persons', (req,response) => {
-    response.json(data.persons)
-    console.log('Data sent',data.persons)
+morgan.token('body', function (request, resource) {
+    if ( request.body ) {
+        return JSON.stringify(request.body)
+    }
+    return ''
 })
 
-app.get('/api/persons/:id', (req,response) => {
-    // console.log('get recieved')
-    const id = Number(req.params.id)
-    // console.log('looking for id',id)7
+app.use(morgan(function (tokens, request, resource) {
+  return [
+    tokens.method(request, resource),
+    tokens.url(request, resource),
+    tokens.status(request, resource),
+    tokens.res(request, resource, 'content-length'), '-',
+    tokens['response-time'](request, resource), 'ms',
+    tokens.body(request,resource)
+  ].join(' ')
+}))
+
+app.get('/api/persons', (request,response) => {
+    response.json(data.persons)
+})
+
+app.get('/api/persons/:id', (request, response) => {
+    const id = Number(request.params.id)
     const phonenumber = data.persons.find( number => {
-        // console.log(number.id)
         return number.id === id
     } )
 
@@ -26,20 +44,38 @@ app.get('/api/persons/:id', (req,response) => {
     }
 })
 
-app.post('/api/persons', (req,response) => {
-    const person = req.body
+app.post('/api/persons', (request,response) => {
 
-    console.log(person)
+    if ( data.persons.length >= maxPersons ) {
+        response.json({'error': 'database is full'})
+    } else if (!request.body.name) {
+        response.json({'error': 'no name'})
+    } else if (!request.body.number) {
+        response.json({'error': 'no phone number'})
+    } else if ( data.persons.find( person => {
+        return person.name === request.body.name
+    } ) != undefined ) {
+        response.json({'error': `person ${request.body.name} exists already in the phonebook`})
+    } else {
 
-    // if(!body.content) {
-    //     return response.status(400).json({error: 'content missing'})
-    // }
-    console.log(person)
-    response.json(person)
+        let id = newRandomId()
+        while ( data.persons.find( person => {
+            return person.id === id
+        } ) ) {
+            id = newRandomId()
+        }
+
+        const person = {...request.body, "id":id}
+
+        data.persons = data.persons.concat(person)
+
+        response.json(person)
+    }
+
 })
 
-app.delete('/api/persons/:id', (req,response) => {
-    const id = Number(req.params.id)
+app.delete('/api/persons/:id', (request,response) => {
+    const id = Number(request.params.id)
 
     data.persons = data.persons.filter( person => {
         return person.id !== id
@@ -48,7 +84,7 @@ app.delete('/api/persons/:id', (req,response) => {
     response.status(204).end()
 })
 
-app.get('/info', (req,response) => {
+app.get('/info', (request,response) => {
     response.send(`<body><p>Phonebook has info for ${data.persons.length} people</p><p>${new Date()}</p></body>`)
 })
 
