@@ -3,7 +3,9 @@ const app = express()
 const bodyParser = require('body-parser')
 const data = require('./db.json')
 const morgan = require('morgan')
+const cors = require('cors')
 
+app.use(cors())
 const maxPersons = 100
 const newRandomId = () => Math.floor((Math.random() * maxPersons) + 1)
 
@@ -88,7 +90,7 @@ app.get('/info', (request,response) => {
     response.send(`<body><p>Phonebook has info for ${data.persons.length} people</p><p>${new Date()}</p></body>`)
 })
 
-const PORT = 3001
+const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`)
 })
