@@ -6,6 +6,7 @@ const morgan = require('morgan')
 const cors = require('cors')
 
 app.use(cors())
+app.use(express.static('build'))
 const maxPersons = 100
 const newRandomId = () => Math.floor((Math.random() * maxPersons) + 1)
 
