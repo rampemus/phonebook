@@ -17,8 +17,7 @@ const url =
 //create persons
 const personSchema = new mongoose.Schema({
   name: String,
-  number: String,
-  id: Number,
+  number: String
 })
 personSchema.set('toJSON', {
   transform: (document, returnedObject) => {
@@ -31,17 +30,15 @@ const Person = mongoose.model('Person', personSchema)
 const maxPersons = 100
 const newRandomId = () => Math.floor((Math.random() * maxPersons) + 1)
 
-//***api server setup***
+//***api server setup***//
 app.use(cors())
 app.use(express.static('build'))
 app.use(bodyParser.json())
-
 morgan.token('body', (request,resource) => {
     if (request.body) {
         return JSON.stringify(request.body)
     }
 })
-
 app.use(morgan((tokens,request, resource)=>{
     return [
         tokens.method(request,resource),
@@ -56,76 +53,57 @@ app.use(morgan((tokens,request, resource)=>{
 app.get('/api/persons', (request, response) => {
     mongoose.connect(url, { useNewUrlParser: true })
     Person.find({}).then(result => {
-        console.log('phonebook')
-        result.forEach(person => {
-            console.log(`${person.name} ${person.number}`)
-        })
+        // console.log('phonebook')
+        // result.forEach(person => {
+        //     console.log(`${person.name} ${person.number}`)
+        // })
         response.json(result)
         mongoose.connection.close()
     })
 })
 
 app.get('/api/persons/:id', (request, response) => {
-    const id = parseInt(request.params.id)
-    console.log('got the request for id ' + id)
+    const id = request.params.id
+    // console.log('got the request for id ' + id)
     mongoose.connect(url, { useNewUrlParser: true })
-    Person.find({ id: id}).then(result => {
-        console.log('searching for id ' + id)
-        if (result) {
-            response.json(result[0]) //we don't want to return array
-        } else {
-            response.status(404).end()
-        }
-        mongoose.connection.close()
-    })
+    Person.findById({_id:id})
+        .then(result => {
+            response.json(result) //we don't want to return array
+            mongoose.connection.close()
+        })
+        .catch(error => {
+            console.log('id not found in database')
+            mongoose.connection.close()
+        })
 })
 
 app.post('/api/persons', (request,response) => {
+    let persons = {}
+    mongoose.connect(url, { useNewUrlParser: true })
+    console.log('adding to this data:',persons)
+    if (!request.body.name) {
+        response.json({'error': 'no name'})
+        mongoose.connection.close()
+    } else if (!request.body.number) {
+        response.json({'error': 'no phone number'})
+        mongoose.connection.close()
+    } else {
+        const person = new Person({...request.body})
+        person.save().then(response => {
+            console.log('person saved!', response)
+            mongoose.connection.close()
+        })
+        response.json(person)
+    }
+})
+
+app.delete('/api/persons/:id', (request,response) => {
 
     mongoose.connect(url, { useNewUrlParser: true })
 
-    let persons = {}
-
-    Person.find({}).then(result => {
-        console.log('phonebook')
-        result.forEach(person => {
-            console.log(`${person.name} ${person.number}`)
-        })
-        persons = result
-    }).then(()=>{
-        console.log('adding to this data:',persons)
-
-        if ( persons.length >= maxPersons ) {
-            response.json({'error': 'database is full'})
-        } else if (!request.body.name) {
-            response.json({'error': 'no name'})
-        } else if (!request.body.number) {
-            response.json({'error': 'no phone number'})
-        } else if ( persons.find( person => {
-            return person.name === request.body.name
-        } ) != undefined ) {
-            response.json({'error': `person ${request.body.name} exists already in the phonebook`})
-        } else {
-
-            console.log('starting to generate new id')
-
-            let id = newRandomId()
-            while ( persons.find( person => {
-                return person.id === id
-            } ) ) {
-                id = newRandomId()
-            }
-            const person = new Person({...request.body, "id":id})
-
-            person.save().then(response => {
-                console.log('person saved!', response);
-                mongoose.connection.close();
-            })
-
-            // data.persons = data.persons.concat(person)
-
-            response.json(person)
-        }
+    Person.findByIdAndDelete(request.params.id).then(()=>{
+        mongoose.connection.close();
+        response.status(204).end()
     })
 })
 
@@ -138,40 +116,6 @@ if ( process.argv.length == 3 ) {
             console.log(`${person.name} ${person.number}`)
         })
         mongoose.connection.close()
-    })
-}
-
-if ( process.argv.length == 4 ) {
-    Person.find({ id: parseInt(process.argv[3])}).then(result => {
-        console.log('phonebook')
-        result.forEach(person => {
-            console.log(`${person.name} ${person.number}`)
-        })
-        mongoose.connection.close()
-    })
-}
-
-//only for single user TODO:real id generation
-if ( process.argv.length == 5 ) {
-
-    let newId = 0
-    Person.find({}).then(result => {
-        result.forEach(person => {
-            if (person.id > newId) {
-                newId = person.id + 1
-            }
-        })
-
-        const person = new Person({
-            name: process.argv[3],
-            number: process.argv[4],
-            id: newId,
-        })
-
-        person.save().then(response => {
-            console.log('person saved!');
-            mongoose.connection.close();
-        })
     })
 }
 
