@@ -1,3 +1,4 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
 const bodyParser = require('body-parser')
@@ -5,19 +6,13 @@ const morgan = require('morgan')
 const mongoose = require('mongoose')
 const cors = require('cors')
 
-if ( process.argv.length<3 ) {
-  console.log('give mongodb password as argument')
-  process.exit(1)
-}
-
 //***mongoose setup***
-const password = process.argv[2]
-const url =
-  `mongodb+srv://fullstack:${password}@cluster0-juhnz.mongodb.net/phonebook-app?retryWrites=true&w=majority`
+const url = process.env.MONGODB_URI
+
 //create persons
 const personSchema = new mongoose.Schema({
-  name: String,
-  number: String
+    name: String,
+    number: String
 })
 personSchema.set('toJSON', {
   transform: (document, returnedObject) => {
@@ -57,7 +52,7 @@ app.get('/api/persons', (request, response) => {
         // result.forEach(person => {
         //     console.log(`${person.name} ${person.number}`)
         // })
-        response.json(result)
+        response.json(result.map(person => person.toJSON()))
         mongoose.connection.close()
     })
 })
@@ -68,11 +63,16 @@ app.get('/api/persons/:id', (request, response) => {
     mongoose.connect(url, { useNewUrlParser: true })
     Person.findById({_id:id})
         .then(result => {
-            response.json(result) //we don't want to return array
+            if (result) {
+                response.json(result)
+            } else {
+                response.status(404).end()
+            }
             mongoose.connection.close()
         })
         .catch(error => {
-            console.log('id not found in database')
+            console.log(error)
+            response.status(400).send({error: 'malformatted id'})
             mongoose.connection.close()
         })
 })
@@ -98,18 +98,35 @@ app.post('/api/persons', (request,response) => {
 })
 
 app.delete('/api/persons/:id', (request,response) => {
-
     mongoose.connect(url, { useNewUrlParser: true })
-
-    Person.findByIdAndDelete(request.params.id).then(()=>{
-        mongoose.connection.close();
-        response.status(204).end()
-    })
+    Person
+        .findByIdAndDelete(request.params.id)
+        .then(()=>{
+            mongoose.connection.close();
+            response.status(204).end()
+        })
+        .catch(error => next(error))
 })
 
-mongoose.connect(url, { useNewUrlParser: true })
+// const unknownEndpoint = (request, response) => {
+//     response.status(404).send({error: 'unknown endpoint'})
+// }
+//
+// app.use(unknownEndpoint)
 
-if ( process.argv.length == 3 ) {
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError' && error.kind == 'ObjectId') {
+    return response.status(400).send({ error: 'malformatted id' })
+  }
+
+  next(error)
+}
+
+app.use(errorHandler)
+
+mongoose.connect(url, { useNewUrlParser: true })
     Person.find({}).then(result => {
         console.log('phonebook')
         result.forEach(person => {
@@ -117,9 +134,8 @@ if ( process.argv.length == 3 ) {
         })
         mongoose.connection.close()
     })
-}
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`)
 })
