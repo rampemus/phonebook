@@ -5,25 +5,10 @@ const bodyParser = require('body-parser')
 const morgan = require('morgan')
 const mongoose = require('mongoose')
 const cors = require('cors')
+const Person = require('./models/person.js')
 
 //***mongoose setup***
 const url = process.env.MONGODB_URI
-
-//create persons
-const personSchema = new mongoose.Schema({
-    name: String,
-    number: String
-})
-personSchema.set('toJSON', {
-  transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toString()
-    delete returnedObject._id
-    delete returnedObject.__v
-  }
-})
-const Person = mongoose.model('Person', personSchema)
-const maxPersons = 100
-const newRandomId = () => Math.floor((Math.random() * maxPersons) + 1)
 
 //***api server setup***//
 app.use(cors())
@@ -46,21 +31,19 @@ app.use(morgan((tokens,request, resource)=>{
 }))
 
 app.get('/api/persons', (request, response) => {
-    mongoose.connect(url, { useNewUrlParser: true })
     Person.find({}).then(result => {
         // console.log('phonebook')
         // result.forEach(person => {
         //     console.log(`${person.name} ${person.number}`)
         // })
-        response.json(result.map(person => person.toJSON()))
-        mongoose.connection.close()
+        response.json(result)
     })
 })
 
 app.get('/api/persons/:id', (request, response) => {
     const id = request.params.id
     // console.log('got the request for id ' + id)
-    mongoose.connect(url, { useNewUrlParser: true })
+    // mongoose.connect(url, { useNewUrlParser: true })
     Person.findById({_id:id})
         .then(result => {
             if (result) {
@@ -68,41 +51,41 @@ app.get('/api/persons/:id', (request, response) => {
             } else {
                 response.status(404).end()
             }
-            mongoose.connection.close()
+            // mongoose.connection.close()
         })
         .catch(error => {
             console.log(error)
             response.status(400).send({error: 'malformatted id'})
-            mongoose.connection.close()
+            // mongoose.connection.close()
         })
 })
 
 app.post('/api/persons', (request,response) => {
     let persons = {}
-    mongoose.connect(url, { useNewUrlParser: true })
+    // mongoose.connect(url, { useNewUrlParser: true })
     console.log('adding to this data:',persons)
     if (!request.body.name) {
         response.json({'error': 'no name'})
-        mongoose.connection.close()
+        // mongoose.connection.close()
     } else if (!request.body.number) {
         response.json({'error': 'no phone number'})
-        mongoose.connection.close()
+        // mongoose.connection.close()
     } else {
         const person = new Person({...request.body})
         person.save().then(response => {
             console.log('person saved!', response)
-            mongoose.connection.close()
+            // mongoose.connection.close()
         })
         response.json(person)
     }
 })
 
 app.delete('/api/persons/:id', (request,response) => {
-    mongoose.connect(url, { useNewUrlParser: true })
+    // mongoose.connect(url, { useNewUrlParser: true })
     Person
         .findByIdAndDelete(request.params.id)
         .then(()=>{
-            mongoose.connection.close();
+            // mongoose.connection.close();
             response.status(204).end()
         })
         .catch(error => next(error))
@@ -115,13 +98,13 @@ app.delete('/api/persons/:id', (request,response) => {
 // app.use(unknownEndpoint)
 
 const errorHandler = (error, request, response, next) => {
-  console.error(error.message)
+    console.error(error.message)
 
-  if (error.name === 'CastError' && error.kind == 'ObjectId') {
-    return response.status(400).send({ error: 'malformatted id' })
-  }
+    if (error.name === 'CastError' && error.kind == 'ObjectId') {
+        return response.status(400).send({ error: 'malformatted id' })
+    }
 
-  next(error)
+    next(error)
 }
 
 app.use(errorHandler)
@@ -132,7 +115,7 @@ mongoose.connect(url, { useNewUrlParser: true })
         result.forEach(person => {
             console.log(`${person.name} ${person.number}`)
         })
-        mongoose.connection.close()
+        // mongoose.connection.close()
     })
 
 const PORT = process.env.PORT
