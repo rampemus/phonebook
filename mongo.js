@@ -40,7 +40,7 @@ app.get('/api/persons', (request, response) => {
     })
 })
 
-app.get('/api/persons/:id', (request, response) => {
+app.get('/api/persons/:id', (request, response, next) => {
     const id = request.params.id
     // console.log('got the request for id ' + id)
     // mongoose.connect(url, { useNewUrlParser: true })
@@ -53,35 +53,46 @@ app.get('/api/persons/:id', (request, response) => {
             }
             // mongoose.connection.close()
         })
-        .catch(error => {
-            console.log(error)
-            response.status(400).send({error: 'malformatted id'})
-            // mongoose.connection.close()
-        })
+        .catch(error => next(error))
 })
 
 app.post('/api/persons', (request,response) => {
     let persons = {}
-    // mongoose.connect(url, { useNewUrlParser: true })
-    console.log('adding to this data:',persons)
+    // console.log('adding to this data:',persons)
     if (!request.body.name) {
         response.json({'error': 'no name'})
-        // mongoose.connection.close()
     } else if (!request.body.number) {
         response.json({'error': 'no phone number'})
-        // mongoose.connection.close()
     } else {
         const person = new Person({...request.body})
-        person.save().then(response => {
-            console.log('person saved!', response)
-            // mongoose.connection.close()
+        Person.find({name:person.name}).then(result => {
+            if (result.length != 0) {
+                // Person.findByIdAndUpdate(result.id, {number:person.number})
+                response.status(405).json({error: "name already exists in phonebook"})
+            } else {
+                person.save()
+                response.json(person)
+            }
+
         })
-        response.json(person)
+        .catch(error => next(error))
     }
 })
 
-app.delete('/api/persons/:id', (request,response) => {
+app.put('/api/persons/:id', (request, response, next) => {
+    const id = request.params.id
+    Person
+        .findByIdAndUpdate(id, {number:request.body.number}, {useFindAndModify:false})
+        .then(() => {
+            Person.findById({_id:id})
+            .then(result => response.json(result))
+        })
+        .catch(error => next(error))
+})
+
+app.delete('/api/persons/:id', (request,response,next) => {
     // mongoose.connect(url, { useNewUrlParser: true })
+
     Person
         .findByIdAndDelete(request.params.id)
         .then(()=>{
@@ -91,11 +102,11 @@ app.delete('/api/persons/:id', (request,response) => {
         .catch(error => next(error))
 })
 
-// const unknownEndpoint = (request, response) => {
-//     response.status(404).send({error: 'unknown endpoint'})
-// }
-//
-// app.use(unknownEndpoint)
+const unknownEndpoint = (request, response) => {
+    response.status(404).send({error: 'unknown endpoint'})
+}
+
+app.use(unknownEndpoint)
 
 const errorHandler = (error, request, response, next) => {
     console.error(error.message)
@@ -106,7 +117,6 @@ const errorHandler = (error, request, response, next) => {
 
     next(error)
 }
-
 app.use(errorHandler)
 
 mongoose.connect(url, { useNewUrlParser: true })
