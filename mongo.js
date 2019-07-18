@@ -56,34 +56,41 @@ app.get('/api/persons/:id', (request, response, next) => {
         .catch(error => next(error))
 })
 
-app.post('/api/persons', (request,response) => {
+app.post('/api/persons', (request,response,next) => {
     let persons = {}
     // console.log('adding to this data:',persons)
-    if (!request.body.name) {
-        response.json({'error': 'no name'})
-    } else if (!request.body.number) {
-        response.json({'error': 'no phone number'})
-    } else {
+    // if (!request.body.name) {
+    //     response.status(400).json({'error': 'no name'})
+    // } else if (!request.body.number) {
+    //     response.status(400).json({'error': 'no phone number'})
+    // } else {
         const person = new Person({...request.body})
-        Person.find({name:person.name}).then(result => {
-            if (result.length != 0) {
-                // Person.findByIdAndUpdate(result.id, {number:person.number})
-                response.status(405).json({error: "name already exists in phonebook"})
-            } else {
-                person.save()
-                response.json(person)
-            }
+        Person
+            .find({name:person.name})
+            .then(result => {
+                if (result.length != 0) {
+                    // Person.findByIdAndUpdate(result.id, {number:person.number})
+                    response.status(405).json({error: "name already exists in phonebook"})
+                } else {
+                    person
+                        .save()
+                        .then(result => {
+                            response.json(person)
+                        })
+                        .catch(error => next(error))
 
-        })
-        .catch(error => next(error))
-    }
+                }
+
+            })
+
+    // }
 })
 
 app.put('/api/persons/:id', (request, response, next) => {
     const id = request.params.id
     Person
         .findByIdAndUpdate(id, {number:request.body.number}, {useFindAndModify:false})
-        .then(() => {
+        .then((unknownResult, anotherResult) => {
             Person.findById({_id:id})
             .then(result => response.json(result))
         })
@@ -109,10 +116,16 @@ const unknownEndpoint = (request, response) => {
 app.use(unknownEndpoint)
 
 const errorHandler = (error, request, response, next) => {
-    console.error(error.message)
+    // console.error(error.message)
+
+    console.log('error handler working')
 
     if (error.name === 'CastError' && error.kind == 'ObjectId') {
         return response.status(400).send({ error: 'malformatted id' })
+    }
+    if (error.name === 'ValidationError' ) {
+        console.log('found validation error',error.name)
+        return response.status(400).send({error: error.message})
     }
 
     next(error)

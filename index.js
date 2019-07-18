@@ -12,7 +12,7 @@ const newRandomId = () => Math.floor((Math.random() * maxPersons) + 1)
 
 app.use(bodyParser.json())
 
-morgan.token('body', function (request, resource) {
+morgan.token('body', function (request) {
     if ( request.body ) {
         return JSON.stringify(request.body)
     }
@@ -20,14 +20,14 @@ morgan.token('body', function (request, resource) {
 })
 
 app.use(morgan(function (tokens, request, resource) {
-  return [
-    tokens.method(request, resource),
-    tokens.url(request, resource),
-    tokens.status(request, resource),
-    tokens.res(request, resource, 'content-length'), '-',
-    tokens['response-time'](request, resource), 'ms',
-    tokens.body(request,resource)
-  ].join(' ')
+    return [
+        tokens.method(request, resource),
+        tokens.url(request, resource),
+        tokens.status(request, resource),
+        tokens.res(request, resource, 'content-length'), '-',
+        tokens['response-time'](request, resource), 'ms',
+        tokens.body(request,resource)
+    ].join(' ')
 }))
 
 app.get('/api/persons', (request,response) => {
@@ -68,7 +68,7 @@ app.post('/api/persons', (request,response) => {
             id = newRandomId()
         }
 
-        const person = {...request.body, "id":id}
+        const person = {...request.body, 'id':id}
 
         data.persons = data.persons.concat(person)
 
@@ -93,5 +93,5 @@ app.get('/info', (request,response) => {
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`)
+    console.log(`Server listening on port ${PORT}`)
 })
