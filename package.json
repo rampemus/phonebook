@@ -9,7 +9,12 @@
         "watch": "nodemon index.js",
         "mongowatch": "nodemon mongo.js",
         "lint": "eslint .",
-        "fix": "eslint . --fix"
+        "fix": "eslint . --fix",
+
+        "build:ui": "rm -rf build && cd ../../fullstackopen/osa2/puhelinluettelo && npm run build --prod && cp -r build ../../../NodeProjects/phonebook/",
+        "deploy": "git push heroku master",
+        "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push && npm run deploy",
+        "logs:prod": "heroku logs --tail"
     },
     "author": "Pasi Toivanen",
     "license": "MIT",
