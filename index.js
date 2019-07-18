@@ -50,15 +50,15 @@ app.get('/api/persons/:id', (request, response) => {
 app.post('/api/persons', (request,response) => {
 
     if ( data.persons.length >= maxPersons ) {
-        response.json({'error': 'database is full'})
+        response.json({ 'error': 'database is full' })
     } else if (!request.body.name) {
-        response.json({'error': 'no name'})
+        response.json({ 'error': 'no name' })
     } else if (!request.body.number) {
-        response.json({'error': 'no phone number'})
+        response.json({ 'error': 'no phone number' })
     } else if ( data.persons.find( person => {
         return person.name === request.body.name
-    } ) != undefined ) {
-        response.json({'error': `person ${request.body.name} exists already in the phonebook`})
+    } ) !== undefined ) {
+        response.json({ 'error': `person ${request.body.name} exists already in the phonebook` })
     } else {
 
         let id = newRandomId()
@@ -68,7 +68,7 @@ app.post('/api/persons', (request,response) => {
             id = newRandomId()
         }
 
-        const person = {...request.body, 'id':id}
+        const person = { ...request.body, 'id':id }
 
         data.persons = data.persons.concat(person)
 

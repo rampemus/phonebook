@@ -8,7 +8,8 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "watch": "nodemon index.js",
         "mongowatch": "nodemon mongo.js",
-        "lint": "eslint ."
+        "lint": "eslint .",
+        "fix": "eslint . --fix"
     },
     "author": "Pasi Toivanen",
     "license": "MIT",

@@ -19,7 +19,7 @@ morgan.token('body', (request) => {
         return JSON.stringify(request.body)
     }
 })
-app.use(morgan((tokens,request, resource)=>{
+app.use(morgan((tokens,request, resource) => {
     return [
         tokens.method(request,resource),
         tokens.url(request,resource),
@@ -44,7 +44,7 @@ app.get('/api/persons/:id', (request, response, next) => {
     const id = request.params.id
     // console.log('got the request for id ' + id)
     // mongoose.connect(url, { useNewUrlParser: true })
-    Person.findById({_id:id})
+    Person.findById({ _id:id })
         .then(result => {
             if (result) {
                 response.json(result)
@@ -63,13 +63,13 @@ app.post('/api/persons', (request,response,next) => {
     // } else if (!request.body.number) {
     //     response.status(400).json({'error': 'no phone number'})
     // } else {
-    const person = new Person({...request.body})
+    const person = new Person({ ...request.body })
     Person
-        .find({name:person.name})
+        .find({ name:person.name })
         .then(result => {
-            if (result.length != 0) {
+            if (result.length !== 0) {
                 // Person.findByIdAndUpdate(result.id, {number:person.number})
-                response.status(405).json({error: 'name already exists in phonebook'})
+                response.status(405).json({ error: 'name already exists in phonebook' })
             } else {
                 person
                     .save()
@@ -88,9 +88,9 @@ app.post('/api/persons', (request,response,next) => {
 app.put('/api/persons/:id', (request, response, next) => {
     const id = request.params.id
     Person
-        .findByIdAndUpdate(id, {number:request.body.number}, {useFindAndModify:false})
+        .findByIdAndUpdate(id, { number:request.body.number }, { useFindAndModify:false })
         .then(() => {
-            Person.findById({_id:id})
+            Person.findById({ _id:id })
                 .then(result => response.json(result))
         })
         .catch(error => next(error))
@@ -101,7 +101,7 @@ app.delete('/api/persons/:id', (request,response,next) => {
 
     Person
         .findByIdAndDelete(request.params.id)
-        .then(()=>{
+        .then(() => {
             // mongoose.connection.close();
             response.status(204).end()
         })
@@ -109,7 +109,7 @@ app.delete('/api/persons/:id', (request,response,next) => {
 })
 
 const unknownEndpoint = (request, response) => {
-    response.status(404).send({error: 'unknown endpoint'})
+    response.status(404).send({ error: 'unknown endpoint' })
 }
 
 app.use(unknownEndpoint)
@@ -117,7 +117,7 @@ app.use(unknownEndpoint)
 const errorHandler = (error, request, response, next) => {
     // console.error(error.message)
 
-    if (error.name === 'CastError' && error.kind == 'ObjectId') {
+    if (error.name === 'CastError' && error.kind === 'ObjectId') {
         return response.status(400).send({ error: 'malformatted id' })
     }
     if (error.name === 'ValidationError' ) {
